@@ -1212,7 +1212,9 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
 
   void _seleccionarCategoria(List<Gasto> gastos) async {
     final categorias = gastos.map((g) => g.categoria).toSet().toList();
-    String? seleccion = _categoriaSeleccionada;
+    // Incluye la opción 'Todas' al inicio para permitir deseleccionar desde el diálogo
+    final displayCategorias = <String>['Todas', ...categorias];
+    String seleccion = _categoriaSeleccionada ?? 'Todas';
     final seleccionada = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -1223,9 +1225,9 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
               content: SizedBox(
                 width: double.maxFinite,
                 child: SimpleRadioGroup<String>(
-                  values: categorias,
+                  values: displayCategorias,
                   selected: seleccion,
-                  onChanged: (v) => setStateDialog(() => seleccion = v),
+                  onChanged: (v) => setStateDialog(() => seleccion = v ?? 'Todas'),
                   itemBuilder: (cat, selected) => ListTile(
                     leading: Icon(
                       selected
@@ -1242,7 +1244,7 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(AppLocalizations.of(context)!.cancel),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () => Navigator.of(context).pop(seleccion),
                   child: Text(AppLocalizations.of(context)!.ok),
                 ),
@@ -1254,7 +1256,11 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
     );
     if (seleccionada != null) {
       setState(() {
-        _categoriaSeleccionada = seleccionada;
+        if (seleccionada == 'Todas') {
+          _categoriaSeleccionada = null;
+        } else {
+          _categoriaSeleccionada = seleccionada;
+        }
       });
     }
   }
@@ -1446,9 +1452,13 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
   @override
   Widget build(BuildContext context) {
     final gastos = GastoRepository.obtenerGastos();
-    final gastosFiltrados = _filtrarPorPeriodo(
-      gastos,
-    ); // Aplica tus filtros aquí
+    var gastosFiltrados = _filtrarPorPeriodo(gastos); // Aplica tus filtros aquí
+    // Aplica filtro por categoría si el usuario seleccionó una
+    if (_categoriaSeleccionada != null) {
+      gastosFiltrados = gastosFiltrados
+          .where((g) => g.categoria == _categoriaSeleccionada)
+          .toList();
+    }
     final total = gastosFiltrados.fold<double>(
       0,
       (s, g) =>
@@ -1484,6 +1494,24 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
             tooltip: AppLocalizations.of(context)!.categoryLabel,
             onPressed: () => _seleccionarCategoria(gastos),
           ),
+          // Botón rápido para alternar el tipo de gráfico (barras <-> pastel)
+          IconButton(
+            icon: Icon(
+              _tipoGrafico == TipoGrafico.pastel
+                  ? Icons.pie_chart
+                  : Icons.bar_chart,
+            ),
+            tooltip: AppLocalizations.of(context)!.chartTypeLabel,
+            onPressed: () async {
+              setState(() {
+                _tipoGrafico = _tipoGrafico == TipoGrafico.pastel
+                    ? TipoGrafico.barras
+                    : TipoGrafico.pastel;
+              });
+              await PreferenciasUsuario.guardarTipoGrafico(_tipoGrafico);
+            },
+          ),
+          // (El botón de limpiar se muestra condicionalmente más abajo)
           IconButton(
             icon: const Icon(Icons.account_balance_wallet),
             tooltip: AppLocalizations.of(context)!.budgets,
@@ -1592,89 +1620,110 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
                       ),
                     ),
                   ),
-                if (gastosFiltrados.isNotEmpty &&
-                    _tipoGrafico == TipoGrafico.barras)
-                  Builder(
-                    builder: (context) {
-                      final Map<String, double> data = {};
-                      for (var g in gastosFiltrados) {
-                        final monto = g.montoCents != null
-                            ? g.montoCents! / 100.0
-                            : (parseMonto(g.monto) ?? 0);
-                        data[g.categoria] = (data[g.categoria] ?? 0) + monto;
-                      }
-                      final colors = [
-                        Colors.blue,
-                        Colors.green,
-                        Colors.orange,
-                        Colors.purple,
-                        Colors.red,
-                        Colors.teal,
-                        Colors.amber,
-                        Colors.indigo,
-                      ];
-                      final labels = <String>[];
-                      final groups = <BarChartGroupData>[];
-                      int i = 0;
-                      for (final e in data.entries) {
-                        labels.add(e.key);
-                        final color = colors[i % colors.length];
-                        groups.add(
-                          BarChartGroupData(
-                            x: i,
-                            barRods: [
-                              BarChartRodData(
-                                toY: e.value,
-                                color: color,
-                                width: 18,
-                              ),
-                            ],
-                            showingTooltipIndicators: const [0],
-                          ),
+                if (gastosFiltrados.isNotEmpty)
+                  SizedBox(
+                    height: 220,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(scale: animation, child: child),
                         );
-                        i++;
-                      }
-                      return SizedBox(
-                        height: 220,
-                        child: BarChart(
-                          BarChartData(
-                            barGroups: groups,
-                            titlesData: FlTitlesData(
-                              leftTitles: const AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  reservedSize: 40,
-                                ),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final idx = value.toInt();
-                                    if (idx >= 0 && idx < labels.length) {
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 4.0,
+                      },
+                      child: _tipoGrafico == TipoGrafico.barras
+                          ? Builder(
+                              key: const ValueKey('bar'),
+                              builder: (context) {
+                                final Map<String, double> data = {};
+                                for (var g in gastosFiltrados) {
+                                  final monto = g.montoCents != null
+                                      ? g.montoCents! / 100.0
+                                      : (parseMonto(g.monto) ?? 0);
+                                  data[g.categoria] =
+                                      (data[g.categoria] ?? 0) + monto;
+                                }
+                                final colors = [
+                                  Colors.blue,
+                                  Colors.green,
+                                  Colors.orange,
+                                  Colors.purple,
+                                  Colors.red,
+                                  Colors.teal,
+                                  Colors.amber,
+                                  Colors.indigo,
+                                ];
+                                final labels = <String>[];
+                                final groups = <BarChartGroupData>[];
+                                int i = 0;
+                                for (final e in data.entries) {
+                                  labels.add(e.key);
+                                  final color = colors[i % colors.length];
+                                  groups.add(
+                                    BarChartGroupData(
+                                      x: i,
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: e.value,
+                                          color: color,
+                                          width: 18,
                                         ),
-                                        child: Text(
-                                          labels[idx],
-                                          style: const TextStyle(fontSize: 10),
+                                      ],
+                                      showingTooltipIndicators: const [0],
+                                    ),
+                                  );
+                                  i++;
+                                }
+                                return BarChart(
+                                  BarChartData(
+                                    barGroups: groups,
+                                    titlesData: FlTitlesData(
+                                      leftTitles: const AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 40,
                                         ),
-                                      );
-                                    }
-                                    return const SizedBox.shrink();
-                                  },
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, meta) {
+                                            final idx = value.toInt();
+                                            if (idx >= 0 && idx < labels.length) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 4.0,
+                                                ),
+                                                child: Text(
+                                                  labels[idx],
+                                                  style: const TextStyle(fontSize: 10),
+                                                ),
+                                              );
+                                            }
+                                            return const SizedBox.shrink();
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    barTouchData: BarTouchData(enabled: true),
+                                  ),
+                                );
+                              },
+                            )
+                          : SizedBox(
+                              key: const ValueKey('pie'),
+                              child: PieChart(
+                                PieChartData(
+                                  sections: _crearPieSections(gastosFiltrados),
+                                  centerSpaceRadius: 30,
+                                  sectionsSpace: 2,
+                                  pieTouchData: PieTouchData(enabled: true),
                                 ),
                               ),
                             ),
-                            barTouchData: BarTouchData(enabled: true),
-                          ),
-                        ),
-                      );
-                    },
+                    ),
                   ),
-                if (gastosFiltrados.isNotEmpty &&
-                    _tipoGrafico == TipoGrafico.barras)
+                if (gastosFiltrados.isNotEmpty)
                   AnimatedSize(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeInOut,
@@ -1685,39 +1734,7 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildBarLegend(gastosFiltrados),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                if (gastosFiltrados.isNotEmpty &&
-                    _tipoGrafico == TipoGrafico.pastel)
-                  SizedBox(
-                    height: 220,
-                    child: PieChart(
-                      PieChartData(
-                        sections: _crearPieSections(gastosFiltrados),
-                        centerSpaceRadius: 30,
-                        sectionsSpace: 2,
-                        pieTouchData: PieTouchData(enabled: true),
-                      ),
-                    ),
-                  ),
-                if (gastosFiltrados.isNotEmpty &&
-                    _tipoGrafico == TipoGrafico.pastel)
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeInOut,
-                    child: ClipRect(
-                      child: Align(
-                        heightFactor: _mostrarLeyenda ? 1.0 : 0.0,
-                        alignment: Alignment.topCenter,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildPieLegend(gastosFiltrados),
+                            if (_tipoGrafico == TipoGrafico.barras) _buildBarLegend(gastosFiltrados) else _buildPieLegend(gastosFiltrados),
                             const SizedBox(height: 8),
                           ],
                         ),
