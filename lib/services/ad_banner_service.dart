@@ -26,11 +26,21 @@ class AdBannerConfig {
   }
 
   factory AdBannerConfig.fromJson(Map<String, dynamic> json) {
+    // Manejar conversión de string a bool para valores que vienen de query string
+    bool isEnabledValue = false;
+    if (json['isEnabled'] != null) {
+      if (json['isEnabled'] is bool) {
+        isEnabledValue = json['isEnabled'];
+      } else if (json['isEnabled'] is String) {
+        isEnabledValue = json['isEnabled'].toLowerCase() == 'true';
+      }
+    }
+    
     return AdBannerConfig(
       imageUrl: json['imageUrl'],
       targetUrl: json['targetUrl'],
       localImagePath: json['localImagePath'],
-      isEnabled: json['isEnabled'] ?? true,
+      isEnabled: isEnabledValue,
       fallbackText: json['fallbackText'] ?? 'Espacio publicitario',
     );
   }
@@ -66,14 +76,20 @@ class AdBannerService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonString = prefs.getString(key);
-      if (jsonString == null) return _defaultConfig;
+      
+      if (jsonString == null) {
+        return _defaultConfig;
+      }
       
       final json = Map<String, dynamic>.from(
         Uri.splitQueryString(jsonString)
           .map((k, v) => MapEntry(k, v)),
       );
-      return AdBannerConfig.fromJson(json);
-    } catch (_) {
+      
+      final config = AdBannerConfig.fromJson(json);
+      
+      return config;
+    } catch (e) {
       return _defaultConfig;
     }
   }
@@ -87,8 +103,9 @@ class AdBannerService {
           .where((e) => e.value != null)
           .map((e) => '${e.key}=${Uri.encodeComponent(e.value.toString())}')
           .join('&');
+      
       await prefs.setString(key, queryString);
-    } catch (_) {
+    } catch (e) {
       // Error al guardar - se ignora
     }
   }
@@ -103,5 +120,27 @@ class AdBannerService {
       fallbackText: sampleText,
       targetUrl: sampleUrl ?? 'https://example.com',
     );
+  }
+
+  // Método para configurar banners de demostración
+  static Future<void> setupDemoBanners() async {
+    // Banner 1 - Página principal (imagen publicitaria real)
+    final banner1 = AdBannerConfig(
+      isEnabled: true,
+      fallbackText: '💳 ¡Tarjeta de Crédito sin Anualidad! - Banco Digital',
+      targetUrl: 'https://flutter.dev',
+      imageUrl: 'https://picsum.photos/350/80?random=1',
+    );
+
+    // Banner 2 - Página de registro (imagen publicitaria real)
+    final banner2 = AdBannerConfig(
+      isEnabled: true,
+      fallbackText: '🍕 Delivery Gratis en tu Primera Orden - App Food',
+      targetUrl: 'https://dart.dev',
+      imageUrl: 'https://picsum.photos/350/70?random=2',
+    );
+
+    await saveBanner1Config(banner1);
+    await saveBanner2Config(banner2);
   }
 }

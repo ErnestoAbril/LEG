@@ -228,12 +228,23 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   }
 
   Future<void> _loadBannerConfig() async {
-    final config = await AdBannerService.getBanner1Config();
-    if (mounted) {
-      setState(() {
-        _banner1Config = config;
-      });
-    }
+    // Limpiar configuraciones anteriores y usar banners con URLs funcionales
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('ad_banner_1');
+    await prefs.remove('ad_banner_2');
+    
+    // Configurar banners de demostración con URLs que funcionan
+    await AdBannerService.setupDemoBanners();
+    
+    // Configurar banner con imagen que funciona
+    setState(() {
+      _banner1Config = const AdBannerConfig(
+        isEnabled: true,
+        fallbackText: '💳 ¡Tarjeta de Crédito sin Anualidad! - Banco Digital',
+        targetUrl: 'https://flutter.dev',
+        imageUrl: 'https://picsum.photos/350/80?random=1',
+      );
+    });
   }
 
   // Método de inyección de prueba eliminado para evitar navegación automática
@@ -251,15 +262,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Banner publicitario 1 (parte superior)
-            if (_banner1Config.isEnabled)
-              AdBanner(
-                imageUrl: _banner1Config.imageUrl,
-                targetUrl: _banner1Config.targetUrl,
-                localImagePath: _banner1Config.localImagePath,
-                fallbackText: _banner1Config.fallbackText,
-                height: 80,
-              ),
             ElevatedButton.icon(
               icon: const Icon(Icons.add_circle_outline),
               label: Text(AppLocalizations.of(context)!.registerExpense),
@@ -329,6 +331,30 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ],
         ),
       ),
+      // Banner pegado completamente al fondo de la pantalla
+      bottomNavigationBar: _banner1Config.isEnabled
+          ? Container(
+              height: 85,
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).dividerColor.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: AdBanner(
+                imageUrl: _banner1Config.imageUrl,
+                targetUrl: _banner1Config.targetUrl,
+                localImagePath: _banner1Config.localImagePath,
+                fallbackText: _banner1Config.fallbackText,
+                height: 80,
+              ),
+            )
+          : null,
     );
   }
 }
@@ -392,12 +418,15 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
   }
 
   Future<void> _loadBannerConfig() async {
-    final config = await AdBannerService.getBanner2Config();
-    if (mounted) {
-      setState(() {
-        _banner2Config = config;
-      });
-    }
+    // Configurar banner con imagen que funciona
+    setState(() {
+      _banner2Config = const AdBannerConfig(
+        isEnabled: true,
+        fallbackText: '🍕 Delivery Gratis en tu Primera Orden - App Food',
+        targetUrl: 'https://dart.dev',
+        imageUrl: 'https://picsum.photos/350/70?random=2',
+      );
+    });
   }
 
   Future<void> _cargarPresupuestoSeleccionado() async {

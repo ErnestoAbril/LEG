@@ -75,7 +75,9 @@ class AdBanner extends StatelessWidget {
           localImagePath!,
           fit: BoxFit.cover,
           width: double.infinity,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(),
+          errorBuilder: (context, error, stackTrace) {
+            return _buildFallback();
+          },
         ),
       );
     }
@@ -88,7 +90,9 @@ class AdBanner extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
+            if (loadingProgress == null) {
+              return child;
+            }
             return Center(
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
@@ -98,7 +102,9 @@ class AdBanner extends StatelessWidget {
               ),
             );
           },
-          errorBuilder: (context, error, stackTrace) => _buildFallback(),
+          errorBuilder: (context, error, stackTrace) {
+            return _buildFallback();
+          },
         ),
       );
     }
