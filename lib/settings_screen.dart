@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'category_repository.dart';
 import 'app_settings.dart';
 import 'l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _thousandSepCtrl = TextEditingController();
   WeekStart _weekStart = WeekStart.monday;
   final TextEditingController _dateFormatCtrl = TextEditingController();
+  final TextEditingController _donationUrlCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -43,6 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _lang = lang ?? 'es';
     });
+
+    // cargar URL de donación almacenada (si no existe, usar el valor por defecto)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('donationUrl') ?? 'https://www.buymeacoffee.com/ErnestoAbril';
+      _donationUrlCtrl.text = saved;
+    } catch (_) {}
   }
 
   Future<void> _add() async {
@@ -108,6 +119,133 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     setState(() {});
+  }
+
+  Future<void> _launchDonate() async {
+    final text = _donationUrlCtrl.text.trim();
+    // Capturar localizaciones antes de cualquier await
+    final loc = AppLocalizations.of(context)!;
+    final donationErrorMsg = loc.donationUrlOpenError;
+    final donateLabel = loc.donate;
+    if (text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(donationErrorMsg)),
+      );
+      return;
+    }
+    late Uri uri;
+    try {
+      uri = Uri.parse(text);
+      if (!(uri.hasScheme && (uri.scheme == 'https' || uri.scheme == 'http'))) {
+        throw FormatException('invalid scheme');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(donationErrorMsg)),
+      );
+      return;
+    }
+  // Primero intentamos verificar rápidamente si el enlace responde (HEAD)
+    bool? proceed;
+    try {
+      final client = http.Client();
+      final resp = await client.head(uri).timeout(const Duration(seconds: 3));
+      client.close();
+      final ok = resp.statusCode >= 200 && resp.statusCode < 400;
+      if (ok) {
+        // Página parece ok — pedir confirmación al usuario
+        if (!mounted) return;
+        proceed = await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+            title: Text(donateLabel),
+            content: Text('Se abrirá el enlace:\n${uri.toString()}\n\n¿Deseas continuar?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(c, false), child: Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(c, true), child: Text('Abrir')),
+            ],
+          ),
+        );
+      } else {
+        // Respuesta no OK (404, 500, etc.) — advertir y preguntar si abrir de todos modos
+        if (!mounted) return;
+        proceed = await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+            title: Text('Enlace posiblemente roto'),
+            content: Text('La verificación devolvió código ${resp.statusCode}. ¿Deseas abrirlo de todos modos?\n\n${uri.toString()}'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(c, false), child: Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(c, true), child: Text('Abrir de todos modos')),
+            ],
+          ),
+        );
+      }
+    } catch (_) {
+      // Error en la verificación (timeout, sin conexión, etc.) — preguntar si abrir de todos modos
+      if (!mounted) return;
+      proceed = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text('No se pudo verificar el enlace'),
+          content: Text('No se pudo comprobar la disponibilidad del enlace. ¿Deseas abrirlo de todos modos?\n\n${uri.toString()}'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(c, true), child: Text('Abrir de todos modos')),
+          ],
+        ),
+      );
+    }
+
+  if (proceed != true) return;
+
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(donationErrorMsg)),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(donationErrorMsg)),
+      );
+    }
+  }
+
+  Future<void> _saveDonationUrl() async {
+    final text = _donationUrlCtrl.text.trim();
+    // Capturar mensajes localizados antes de awaits
+    final loc = AppLocalizations.of(context)!;
+    final savedMsg = loc.saved;
+    final donationErrorMsg = loc.donationUrlOpenError;
+    if (text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(donationErrorMsg)),
+      );
+      return;
+    }
+    try {
+      final uri = Uri.parse(text);
+      if (!(uri.hasScheme && (uri.scheme == 'https' || uri.scheme == 'http'))) {
+        throw FormatException('invalid scheme');
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('donationUrl', text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(savedMsg)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(donationErrorMsg)),
+      );
+    }
   }
 
   @override
@@ -388,6 +526,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      // Campo editable para la URL de donación y botón guardar
+                      TextField(
+                        controller: _donationUrlCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'URL de donación',
+                          hintText: 'https://',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _launchDonate,
+                            icon: const Icon(Icons.favorite),
+                            label: Text(AppLocalizations.of(context)!.donate),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton(
+                            onPressed: _saveDonationUrl,
+                            child: Text(AppLocalizations.of(context)!.save),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       // Export feature was removed per request
                     ],
                   );
@@ -399,4 +562,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ), // SafeArea
     ); // Scaffold
   }
+  
+  @override
+  void dispose() {
+    _newCat.dispose();
+    _currencySymbol.dispose();
+    _decimalSepCtrl.dispose();
+    _thousandSepCtrl.dispose();
+    _dateFormatCtrl.dispose();
+    _donationUrlCtrl.dispose();
+    super.dispose();
+  }
+
 }

@@ -56,4 +56,9 @@
   "invalidAmount": "Valor inválido. Introduza um número positivo."
   ,
   "invalidAmountFormat": "Formato inválido. Use '.' para milhares e ',' para decimais."
+    ,
+    "donate": "Doar",
+    "donationUrlOpenError": "Não foi possível abrir o link de doação."
+  ,
+  "categoryReachedThreshold": "A categoria \"{category}\" atingiu {percent}% do orçamento."
 }

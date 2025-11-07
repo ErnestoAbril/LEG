@@ -90,5 +90,9 @@
   "dialogCancel": "Annuler",
   "dialogSelect": "Sélectionner",
   "noNote": "Pas de note",
-  "budgetSaved": "Budget {period} enregistré"
+  "budgetSaved": "Budget {period} enregistré",
+  "categoryReachedThreshold": "La catégorie \"{category}\" a atteint {percent}% du budget."
+  ,
+  "donate": "Faire un don",
+  "donationUrlOpenError": "Impossible d'ouvrir le lien de don."
 }

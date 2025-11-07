@@ -3,6 +3,9 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'models/gasto.dart';
+import 'widgets/ad_banner.dart';
+import 'services/ad_banner_service.dart';
 import 'presupuesto_repository.dart';
 import 'widgets/simple_radio_group.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -17,7 +20,6 @@ import 'app_settings.dart';
 import 'format_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
-part 'main.g.dart';
 
 // Formatting helpers moved to format_utils.dart
 
@@ -30,31 +32,6 @@ Future<void> playAlertaSonora() async {
   } catch (_) {
     // Si falla la reproducción, no bloquear la app.
   }
-}
-
-@HiveType(typeId: 0)
-class Gasto extends HiveObject {
-  @HiveField(0)
-  String monto;
-  @HiveField(1)
-  String categoria;
-  @HiveField(2)
-  String nota;
-  @HiveField(3)
-  DateTime fecha;
-  @HiveField(4)
-  int? presupuestoId; // Nuevo: id del presupuesto unificado
-  @HiveField(5)
-  int? montoCents; // nuevo campo canonico (entero en centavos)
-
-  Gasto({
-    required this.monto,
-    required this.categoria,
-    required this.nota,
-    required this.fecha,
-    this.presupuestoId,
-    this.montoCents,
-  });
 }
 
 class GastoRepository {
@@ -226,8 +203,40 @@ class LuzEnElGastoApp extends StatelessWidget {
   }
 }
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  AdBannerConfig _banner1Config = const AdBannerConfig(isEnabled: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerConfig();
+    // Modo de prueba automático - solo en debug. Inserta presupuestos y gastos
+    // para provocar notificaciones al 80% y 90% de una categoría.
+    // Esto facilita pruebas manuales locales.
+    // Nota: la inyección de debug (_runDebugInjection) existe pero NO se llama
+    // automáticamente aquí para evitar que la app abra otra pantalla al inicio.
+    // Si necesitas ejecutar las pruebas locales, llama manualmente a
+    // _runDebugInjection() desde la consola de depuración o habilita la
+    // invocación temporalmente.
+  }
+
+  Future<void> _loadBannerConfig() async {
+    final config = await AdBannerService.getBanner1Config();
+    if (mounted) {
+      setState(() {
+        _banner1Config = config;
+      });
+    }
+  }
+
+  // Método de inyección de prueba eliminado para evitar navegación automática
 
   @override
   Widget build(BuildContext context) {
@@ -242,6 +251,15 @@ class MainMenuScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Banner publicitario 1 (parte superior)
+            if (_banner1Config.isEnabled)
+              AdBanner(
+                imageUrl: _banner1Config.imageUrl,
+                targetUrl: _banner1Config.targetUrl,
+                localImagePath: _banner1Config.localImagePath,
+                fallbackText: _banner1Config.fallbackText,
+                height: 80,
+              ),
             ElevatedButton.icon(
               icon: const Icon(Icons.add_circle_outline),
               label: Text(AppLocalizations.of(context)!.registerExpense),
@@ -329,6 +347,7 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _lastWords = '';
+  AdBannerConfig _banner2Config = const AdBannerConfig(isEnabled: false);
 
   int? _presupuestoSeleccionado;
   Map<String, double> _saldosCategorias = {};
@@ -345,6 +364,7 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _loadBannerConfig();
     _cargarPresupuestoSeleccionado();
     // Usar focus node: formatear SOLO cuando el campo pierde foco (comportamiento clásico).
     _montoFocus = FocusNode();
@@ -369,6 +389,15 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
       }
       _formattingMonto = false;
     });
+  }
+
+  Future<void> _loadBannerConfig() async {
+    final config = await AdBannerService.getBanner2Config();
+    if (mounted) {
+      setState(() {
+        _banner2Config = config;
+      });
+    }
   }
 
   Future<void> _cargarPresupuestoSeleccionado() async {
@@ -903,6 +932,17 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
                 ],
               ),
               const SizedBox(height: 32),
+              // Banner 2 - Registration page
+              if (_banner2Config.isEnabled)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: AdBanner(
+                    imageUrl: _banner2Config.imageUrl,
+                    targetUrl: _banner2Config.targetUrl,
+                    localImagePath: _banner2Config.localImagePath,
+                    fallbackText: _banner2Config.fallbackText,
+                  ),
+                ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.save),
                 label: Text(AppLocalizations.of(context)!.saveExpense),
@@ -933,11 +973,16 @@ class _RegistroGastoScreenState extends State<RegistroGastoScreen> {
           if (!mounted) {
             return;
           }
+          // Mostrar alerta visual y sonora si no hay suficiente saldo
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppLocalizations.of(context)!.insufficientFunds),
             ),
           );
+          // Reproducir sonido de alerta (no bloquear en caso de error)
+          try {
+            await playAlertaSonora();
+          } catch (_) {}
           return;
         }
       }
@@ -1184,6 +1229,11 @@ class PreferenciasUsuario {
 
 class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
   bool _mostrarLeyenda = true;
+  // Evita reproducir la alerta de sobrepaso repetidamente en rebuilds
+  bool _alreadyAlertedSobrepasado = false;
+  // Track per-category alert level: 0 = none, 1 = 80% notified, 2 = 90% notified
+  final Map<String, int> _categoryAlertLevel = {};
+
   @override
   void initState() {
     super.initState();
@@ -1408,6 +1458,57 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
     );
   }
 
+  // Comprueba por categoría si se han alcanzado umbrales y notifica una sola vez.
+  void _checkAndNotifyCategoryAlerts(
+      Map<String, double> gastosPorCat, Map<String, double> presupuestosCat) {
+    try {
+      for (final entry in presupuestosCat.entries) {
+        final cat = entry.key;
+        final presupuesto = entry.value;
+        if (presupuesto <= 0) continue;
+        final gastado = gastosPorCat[cat] ?? 0.0;
+        final porcentaje = presupuesto > 0 ? (gastado / presupuesto * 100) : 0.0;
+        final current = _categoryAlertLevel[cat] ?? 0;
+        if (porcentaje >= 90 && current < 2) {
+          // Notificar 90%
+          _categoryAlertLevel[cat] = 2;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.categoryReachedThreshold(cat, porcentaje.toStringAsFixed(0))),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+            try {
+              playAlertaSonora();
+            } catch (_) {}
+          });
+        } else if (porcentaje >= 80 && current < 1) {
+          // Notificar 80%
+          _categoryAlertLevel[cat] = 1;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.categoryReachedThreshold(cat, porcentaje.toStringAsFixed(0))),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            try {
+              playAlertaSonora();
+            } catch (_) {}
+          });
+        } else if (porcentaje < 80 && current != 0) {
+          // Resetear para futuras notificaciones
+          _categoryAlertLevel[cat] = 0;
+        }
+      }
+    } catch (_) {
+      // No queremos romper la UI por fallos en notificaciones
+    }
+  }
+
   DateTime _inicioPeriodo(PeriodoHistorial periodo) {
     final ahora = DateTime.now();
     switch (periodo) {
@@ -1471,6 +1572,24 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
         ? (total / _presupuesto * 100).clamp(0, 999)
         : 0;
     final sobrepasado = _presupuesto > 0 && total > _presupuesto;
+    // Reproducir una sola vez la alerta sonora si el presupuesto está sobrepasado.
+    if (sobrepasado && !_alreadyAlertedSobrepasado) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          playAlertaSonora();
+        } catch (_) {}
+        if (mounted) {
+          setState(() => _alreadyAlertedSobrepasado = true);
+        }
+      });
+    } else if (!sobrepasado && _alreadyAlertedSobrepasado) {
+      // Resetear la bandera cuando el sobrepaso ya no aplica
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _alreadyAlertedSobrepasado = false);
+        }
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.expenseHistory),
@@ -1839,6 +1958,10 @@ class _HistorialGastosScreenState extends State<HistorialGastosScreen> {
                 gastosPorCat[g.categoria] =
                     (gastosPorCat[g.categoria] ?? 0) + monto;
               }
+              // Programar la comprobación de alertas por categoría después del frame
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _checkAndNotifyCategoryAlerts(gastosPorCat, presupuestosCat);
+              });
               if (gastosFiltrados.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,

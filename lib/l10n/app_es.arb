@@ -101,6 +101,11 @@
   "dialogSelect": "Seleccionar",
   "noNote": "Sin nota",
   "budgetSaved": "Presupuesto {period} guardado"
+  ,
+  "categoryReachedThreshold": "La categoría \"{category}\" alcanzó {percent}% del presupuesto."
+  ,
+  "donate": "Donar",
+  "donationUrlOpenError": "No se pudo abrir el enlace de donación."
 }
 
 
