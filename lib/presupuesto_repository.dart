@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart';
+import 'features/budgets/domain/entities/budget_period.dart';
 
 class PresupuestoRepository {
   static const List<PeriodoPresupuesto> periodos = [

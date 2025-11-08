@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/presupuesto_unificado.dart';
-import '../format_utils.dart';
+import '../shared/utils/format_utils.dart';
 import '../l10n/app_localizations.dart';
 
 typedef IntCallback = void Function(int index);

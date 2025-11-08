@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'l10n/app_localizations.dart';
 import 'presupuesto_categoria_repository.dart';
-import 'main.dart';
-import 'format_utils.dart';
+import 'features/budgets/domain/entities/budget_period.dart';
+import 'legacy_gasto_repository.dart';
+import 'shared/utils/format_utils.dart';
 
 class GestionPresupuestosCategoriaScreen extends StatefulWidget {
   final PeriodoPresupuesto periodo;

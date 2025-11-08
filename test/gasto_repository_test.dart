@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:luz_en_el_gasto/main.dart';
+import 'package:luz_en_el_gasto/legacy_gasto_repository.dart';
 import 'package:luz_en_el_gasto/models/gasto.dart';
 
 void main() {

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/presupuesto_unificado.dart';
 import 'helpers/presupuestos_helpers.dart';
-import 'format_utils.dart';
+import 'shared/utils/format_utils.dart';
 import 'l10n/app_localizations.dart';
-import 'main.dart';
+import 'legacy_gasto_repository.dart';
 
 class BudgetEditScreen extends StatefulWidget {
   final PresupuestoUnificado presupuesto;

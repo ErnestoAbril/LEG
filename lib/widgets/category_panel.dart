@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/presupuesto_unificado.dart';
-import '../format_utils.dart';
+import '../shared/utils/format_utils.dart';
 import '../l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main.dart';
+import '../legacy_gasto_repository.dart';
 
 typedef OnCategoryUpdated = Future<void> Function(String cat, double value);
 
