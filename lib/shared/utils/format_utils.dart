@@ -1,4 +1,4 @@
-import 'app_settings.dart';
+import '../../app_settings.dart';
 
 /// Returns a formatted currency string including symbol, using the app currency settings.
 String formatCurrency(num valor) {

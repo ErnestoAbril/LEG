@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:luz_en_el_gasto/presupuesto_categoria_repository.dart';
-import 'package:luz_en_el_gasto/main.dart';
+import 'package:luz_en_el_gasto/features/budgets/domain/entities/budget_period.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

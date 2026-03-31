@@ -643,6 +643,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Budget {period} saved'**
   String budgetSaved(Object period);
+
+  /// No description provided for @categoryReachedThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Category \"{category}\" reached {percent}% of the budget.'**
+  String categoryReachedThreshold(Object category, Object percent);
+
+  /// No description provided for @donate.
+  ///
+  /// In en, this message translates to:
+  /// **'Donate'**
+  String get donate;
+
+  /// No description provided for @donationUrlOpenError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open donation link.'**
+  String get donationUrlOpenError;
 }
 
 class _AppLocalizationsDelegate

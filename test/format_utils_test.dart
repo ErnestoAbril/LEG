@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:luz_en_el_gasto/format_utils.dart';
+import 'package:luz_en_el_gasto/shared/utils/format_utils.dart';
 import 'package:luz_en_el_gasto/app_settings.dart';
 
 void main() {

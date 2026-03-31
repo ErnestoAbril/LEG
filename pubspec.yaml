@@ -38,12 +38,16 @@ dependencies:
   fl_chart: ^1.0.0
   audioplayers: ^5.2.1
   intl: ^0.20.2
+  equatable: ^2.0.5
   flutter_localizations:
     sdk: flutter
+  url_launcher: ^6.1.8
   path_provider: ^2.0.14
   share_plus: ^11.1.0
   pdf: ^3.10.0
   excel: ^2.0.2
+  http: ^0.13.6
+  flutter_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:

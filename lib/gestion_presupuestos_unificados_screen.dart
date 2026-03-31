@@ -6,7 +6,7 @@ import 'models/presupuesto_unificado.dart';
 import 'helpers/presupuestos_helpers.dart';
 import 'widgets/budget_list.dart';
 import 'l10n/app_localizations.dart';
-import 'main.dart';
+import 'legacy_gasto_repository.dart';
 import 'budget_edit_screen.dart';
 import 'budget_view_screen.dart';
 

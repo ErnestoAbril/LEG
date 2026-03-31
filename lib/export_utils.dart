@@ -5,7 +5,7 @@ import 'package:pdf/pdf.dart' as pdf;
 import 'package:excel/excel.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
-import 'format_utils.dart';
+import 'shared/utils/format_utils.dart';
 
 /// Export all presupuestos to a simple PDF and return the file path.
 Future<String> exportAllPresupuestosToPdf(
@@ -69,7 +69,6 @@ Future<String> exportAllPresupuestosToExcel(
 }
 
 Future<void> shareFile(String path, {String? mimeType}) async {
-  // use deprecated API on purpose for compatibility across versions
   // ignore: deprecated_member_use
   await Share.shareXFiles([XFile(path)], text: 'Compartiendo archivo');
 }

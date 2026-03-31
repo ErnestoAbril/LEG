@@ -296,4 +296,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String budgetSaved(Object period) {
     return 'Budget $period gespeichert';
   }
+
+  @override
+  String categoryReachedThreshold(Object category, Object percent) {
+    return 'Die Kategorie \"$category\" hat $percent% des Budgets erreicht.';
+  }
+
+  @override
+  String get donate => 'Spenden';
+
+  @override
+  String get donationUrlOpenError =>
+      'Link zur Spende konnte nicht geöffnet werden.';
 }

@@ -93,6 +93,11 @@
   "dialogSelect": "Select",
   "noNote": "No note",
   "budgetSaved": "Budget {period} saved"
+  ,
+  "categoryReachedThreshold": "Category \"{category}\" reached {percent}% of the budget."
+  ,
+  "donate": "Donate",
+  "donationUrlOpenError": "Could not open donation link."
 }
 
 

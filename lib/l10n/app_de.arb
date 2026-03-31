@@ -40,20 +40,18 @@
   "invalidDateFormat": "Ungültiges Datumsformat",
   "saved": "Gespeichert",
   "saveWeekStartAndFormat": "Wochenstart und Format speichern",
-  "exampleLabel": "Beispiel"
-  ,
   "languageLabel": "Sprache",
   "languageName_es": "Español",
   "languageName_en": "English",
   "languageName_pt": "Português",
   "languageName_fr": "Français",
-  "languageName_de": "Deutsch"
-  ,
+  "languageName_de": "Deutsch",
   "exportPdf": "PDF exportieren",
   "exportCsv": "CSV exportieren",
-  "exportedFile": "Generierte Datei"
-  ,
-  "invalidAmount": "Ungültiger Betrag. Bitte geben Sie eine positive Zahl ein."
-  ,
-  "invalidAmountFormat": "Ungültiges Format. Verwenden Sie '.' für Tausender und ',' für Dezimalstellen."
+  "exportedFile": "Generierte Datei",
+  "invalidAmount": "Ungültiger Betrag. Bitte geben Sie eine positive Zahl ein.",
+  "categoryReachedThreshold": "Die Kategorie \"{category}\" hat {percent}% des Budgets erreicht.",
+  "invalidAmountFormat": "Ungültiges Format. Verwenden Sie '.' für Tausender und ',' für Dezimalstellen.",
+  "donate": "Spenden",
+  "donationUrlOpenError": "Link zur Spende konnte nicht geöffnet werden."
 }

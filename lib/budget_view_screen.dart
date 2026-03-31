@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'models/presupuesto_unificado.dart';
-import 'format_utils.dart';
+import 'shared/utils/format_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart';
+import 'legacy_gasto_repository.dart';
 
 class BudgetViewScreen extends StatefulWidget {
   final PresupuestoUnificado presupuesto;
